@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">InstaMenu</string>
+    <string name="active_data_connection">Make sure you have an active data connection</string>
+    <string name="ok">OK</string>
+    <string name="please_wait">Please waite..</string>
+</resources>
