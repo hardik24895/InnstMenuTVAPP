@@ -122,6 +122,11 @@ class MediaListAdapter(
         }
     }
 
+    fun submitData(updatedList: MutableList<com.tv.instamenu.data.modal.MediaItem>){
+        list.clear()
+        list.addAll(updatedList)
+    }
+
     override fun onViewDetachedFromWindow(holder: ItemHolder) {
         super.onViewDetachedFromWindow(holder)
         // holder.simpleExoPlayer.release()

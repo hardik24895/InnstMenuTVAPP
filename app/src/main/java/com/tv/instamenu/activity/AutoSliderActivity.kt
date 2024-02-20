@@ -25,6 +25,7 @@ import com.tv.instamenu.data.modal.MediaItem
 import com.tv.instamenu.data.modal.MediaListModal
 import com.tv.instamenu.databinding.ActivityAutosliderBinding
 import com.tv.instamenu.utils.GlideApp
+import com.tv.instamenu.utils.Logger
 import com.tv.instamenu.viewmodal.AutoSliderViewModal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -104,6 +105,7 @@ class AutoSliderActivity : BaseActivity() {
                 menuListViewModal.screenEvent.collect { event ->
                     when (event) {
                         is AutoSliderViewModal.ScreenEvent.OnSuccess -> onSuccess(event.response)
+                        is AutoSliderViewModal.ScreenEvent.OnUpdateMenu -> onUpdateMenu(event.response)
                         is AutoSliderViewModal.ScreenEvent.OnError -> onFailed(event.error)
                     }
 
@@ -131,6 +133,19 @@ class AutoSliderActivity : BaseActivity() {
                 }
 
             }
+
+        } else {
+            Util.showInfoAlert(this, response.data.toString(), false)
+        }
+
+    }
+    private fun onUpdateMenu(response: MediaListModal) {
+        hideProgressbar()
+        if (response.status == 1) {
+            medeaList = response.data
+            mediaListAdapter.submitData(medeaList)
+            Log.d("updateMenu APi call", response.data.toString())
+            mediaListAdapter.notifyDataSetChanged()
 
         } else {
             Util.showInfoAlert(this, response.data.toString(), false)
@@ -225,6 +240,7 @@ class AutoSliderActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopTimer()
 
         // unregistering the onPageChangedCallback
         binding.viewPager.unregisterOnPageChangeCallback(
@@ -281,11 +297,16 @@ class AutoSliderActivity : BaseActivity() {
             override fun run() {
                 mTimerHandler.post {
                     goNextPage()
+                    val id = intent.getStringExtra(EXTRAS_TITLE)
+                    id?.let {
+                        menuListViewModal.updateMenuList(session.user.data?.id.toString(),id )
+                        // menuListViewModal.menuList("7","1" )
+                    }
                 }
             }
         }
         Log.d("timer==", "start")
-        mTimer1?.schedule(mTt1, 60000, 60000)
+        mTimer1?.schedule(mTt1, 20000, 20000)
     }
 
     override fun onDetachedFromWindow() {

@@ -35,6 +35,8 @@ class AutoSliderViewModal@Inject constructor(
 
     val screenEvent = _screenEvent.asSharedFlow()
 
+
+
     fun menuList(
         userId:String,
         screenId :String
@@ -76,9 +78,51 @@ class AutoSliderViewModal@Inject constructor(
             }
         }
     }
+ fun updateMenuList(
+        userId:String,
+        screenId :String
+    ) {
+
+        var result = ""
+        try {
+            val jsonBody = JSONObject()
+            jsonBody.put(USERID, userId)
+            jsonBody.put(Constant.SCREENID, screenId)
+
+
+
+            result = RetrofitRequestBody.setParentJsonData(
+                Constant.MENULIST,
+                jsonBody
+            )
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+
+        val body = RetrofitRequestBody.wrapParams(result)
+        viewModelScope.launch {
+            try {
+                _screenEvent.emit(ScreenEvent.OnUpdateMenu(mediaRepository.mediaList(body)))
+
+            } catch (e: ApiException) {
+                e.message?.let {
+                    _screenEvent.emit(ScreenEvent.OnError(it))
+                }
+            } catch (e: NoInternetException) {
+                e.message?.let {
+                    _screenEvent.emit(ScreenEvent.OnError(it))
+                }
+            } catch (e: Exception) {
+                e.message?.let {
+                    _screenEvent.emit(ScreenEvent.OnError(it))
+                }
+            }
+        }
+    }
 
     sealed class ScreenEvent {
         data class OnError(val error: String) : ScreenEvent()
         data class OnSuccess(val response: MediaListModal) : ScreenEvent()
+        data class OnUpdateMenu(val response: MediaListModal) : ScreenEvent()
     }
 }
