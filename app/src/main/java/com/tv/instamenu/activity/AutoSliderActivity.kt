@@ -25,7 +25,6 @@ import com.tv.instamenu.data.modal.MediaItem
 import com.tv.instamenu.data.modal.MediaListModal
 import com.tv.instamenu.databinding.ActivityAutosliderBinding
 import com.tv.instamenu.utils.GlideApp
-import com.tv.instamenu.utils.Logger
 import com.tv.instamenu.viewmodal.AutoSliderViewModal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -33,7 +32,7 @@ import java.util.Timer
 import java.util.TimerTask
 
 @AndroidEntryPoint
-class AutoSliderActivity : BaseActivity() {
+class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
 
 
     companion object {
@@ -118,7 +117,7 @@ class AutoSliderActivity : BaseActivity() {
         hideProgressbar()
         if (response.status == 1) {
             medeaList = response.data
-            mediaListAdapter = MediaListAdapter(this, medeaList)
+            mediaListAdapter = MediaListAdapter(this, medeaList, this)
             setUpViewPager()
             binding.viewPager.isUserInputEnabled = false
             val requestOptions: RequestOptions = RequestOptions.diskCacheStrategyOf(
@@ -241,7 +240,7 @@ class AutoSliderActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopTimer()
-
+        mediaListAdapter?.binding?.playerView?.player?.release()
         // unregistering the onPageChangedCallback
         binding.viewPager.unregisterOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {}
@@ -250,10 +249,10 @@ class AutoSliderActivity : BaseActivity() {
 
 
     private fun currentPage(position: Int) {
-        Log.d("page", position.toString())
-        /*if (medeaList.get(position).type == "video") {
+        Log.e("page", position.toString())
+        if (medeaList.get(position).type == "video") {
              stopTimer()
-            if (mediaListAdapter?.binding?.playerView?.player==null) return
+           /* if (mediaListAdapter?.binding?.playerView?.player==null) return
             mediaListAdapter?.binding?.playerView?.player!!.addListener(object :
                 Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
@@ -264,8 +263,8 @@ class AutoSliderActivity : BaseActivity() {
 
                     }
                 }
-            })
-        }*/
+            })*/
+        }
     }
 
     /* private fun imageViewPagerSwiping() {
@@ -306,11 +305,18 @@ class AutoSliderActivity : BaseActivity() {
             }
         }
         Log.d("timer==", "start")
-        mTimer1?.schedule(mTt1, 20000, 20000)
+        mTimer1?.schedule(mTt1, 60000, 60000)
     }
+
+
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         mediaListAdapter?.binding?.playerView?.player?.release()
+    }
+
+    override fun videoEnd() {
+        goNextPage()
+        startTimer()
     }
 }

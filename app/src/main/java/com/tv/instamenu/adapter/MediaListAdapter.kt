@@ -12,10 +12,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.tv.instamenu.R
 import com.tv.instamenu.databinding.RowMediaBinding
 import com.tv.instamenu.utils.GlideApp
@@ -25,6 +22,7 @@ import com.tv.instamenu.utils.MediaCache
 class MediaListAdapter(
     private val mContext: Context,
     private var list: MutableList<com.tv.instamenu.data.modal.MediaItem> = mutableListOf(),
+    private val listener : OnItemSelected,
 ) : RecyclerView.Adapter<MediaListAdapter.ItemHolder>() {
 
     var binding: RowMediaBinding? = null
@@ -45,7 +43,7 @@ class MediaListAdapter(
 
     override fun onBindViewHolder(holder: ItemHolder, position: Int) {
         val data = list[position]
-        holder.bindData(mContext, data)
+        holder.bindData(mContext, data,listener)
     }
 
     interface OnItemSelected {
@@ -55,7 +53,11 @@ class MediaListAdapter(
         RecyclerView.ViewHolder(containerView.root) {
         val binding = containerView
         var simpleExoPlayer: ExoPlayer? = null
-        fun initializePlayer(context: Context, data: com.tv.instamenu.data.modal.MediaItem) {
+        fun initializePlayer(
+            context: Context,
+            data: com.tv.instamenu.data.modal.MediaItem,
+            listener: OnItemSelected
+        ) {
 
           //  val mediaDataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context)
             val mediaSourceFactory =
@@ -80,15 +82,17 @@ class MediaListAdapter(
             binding.playerView.requestFocus()
             simpleExoPlayer?.prepare()
             simpleExoPlayer?.play()
-            simpleExoPlayer?.setRepeatMode(Player.REPEAT_MODE_ONE);
+            simpleExoPlayer?.setRepeatMode(Player.REPEAT_MODE_OFF);
 
          simpleExoPlayer!!.addListener(object :
                 Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_ENDED) {
-                        Log.d("player==","end")
-                        simpleExoPlayer?.prepare()
-                        simpleExoPlayer?.play()
+                        Log.e("player==","end")
+                        listener.videoEnd()
+                        /*simpleExoPlayer?.prepare()
+                        simpleExoPlayer?.play()*/
+
                     }
                 }
             })
@@ -101,6 +105,7 @@ class MediaListAdapter(
         fun bindData(
             context: Context,
             data: com.tv.instamenu.data.modal.MediaItem,
+            listener: OnItemSelected,
         ) {
 
             /*if (data.type == "image") {
@@ -140,7 +145,7 @@ class MediaListAdapter(
             holder.binding.image.visibility = View.GONE
             holder.binding.playerView.visibility = View.VISIBLE
             holder.simpleExoPlayer?.prepare()
-            holder.initializePlayer(mContext, list[holder.absoluteAdapterPosition])
+            holder.initializePlayer(mContext, list[holder.absoluteAdapterPosition],listener)
         } else {
             holder.binding.image.visibility = View.VISIBLE
             holder.binding.playerView.visibility = View.GONE
