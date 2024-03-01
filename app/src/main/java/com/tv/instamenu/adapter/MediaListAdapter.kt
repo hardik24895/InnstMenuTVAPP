@@ -48,6 +48,8 @@ class MediaListAdapter(
 
     interface OnItemSelected {
        fun videoEnd()
+
+       fun singleVideoEnd()
     }
     class ItemHolder(containerView: RowMediaBinding) :
         RecyclerView.ViewHolder(containerView.root) {
@@ -56,7 +58,8 @@ class MediaListAdapter(
         fun initializePlayer(
             context: Context,
             data: com.tv.instamenu.data.modal.MediaItem,
-            listener: OnItemSelected
+            listener: OnItemSelected,
+            list: MutableList<com.tv.instamenu.data.modal.MediaItem>
         ) {
 
           //  val mediaDataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context)
@@ -82,7 +85,8 @@ class MediaListAdapter(
             binding.playerView.requestFocus()
             simpleExoPlayer?.prepare()
             simpleExoPlayer?.play()
-            simpleExoPlayer?.setRepeatMode(Player.REPEAT_MODE_OFF);
+            if (list.size==1)  simpleExoPlayer?.setRepeatMode(Player.REPEAT_MODE_ONE)
+            else simpleExoPlayer?.setRepeatMode(Player.REPEAT_MODE_OFF);
 
          simpleExoPlayer!!.addListener(object :
                 Player.Listener {
@@ -95,6 +99,13 @@ class MediaListAdapter(
 
                     }
                 }
+
+             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                 super.onMediaItemTransition(mediaItem, reason)
+                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                   listener.singleVideoEnd()
+                 }
+             }
             })
         }
 
@@ -145,7 +156,7 @@ class MediaListAdapter(
             holder.binding.image.visibility = View.GONE
             holder.binding.playerView.visibility = View.VISIBLE
             holder.simpleExoPlayer?.prepare()
-            holder.initializePlayer(mContext, list[holder.absoluteAdapterPosition],listener)
+            holder.initializePlayer(mContext, list[holder.absoluteAdapterPosition],listener, list)
         } else {
             holder.binding.image.visibility = View.VISIBLE
             holder.binding.playerView.visibility = View.GONE

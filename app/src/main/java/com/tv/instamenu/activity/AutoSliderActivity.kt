@@ -28,6 +28,7 @@ import com.tv.instamenu.utils.GlideApp
 import com.tv.instamenu.viewmodal.AutoSliderViewModal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import okhttp3.internal.notify
 import java.util.Timer
 import java.util.TimerTask
 
@@ -53,11 +54,12 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
     private lateinit var binding: ActivityAutosliderBinding
 
 
-    val menuListViewModal : AutoSliderViewModal by viewModels()
+    val menuListViewModal: AutoSliderViewModal by viewModels()
 
     private var mTimer1: Timer? = null
     private var mTt1: TimerTask? = null
     private val mTimerHandler = Handler()
+    private var isTimerRunning = false
 
     // val scope = MainScope() // could also use an other scope such as viewModelScope if available
     // var job: Job? = null
@@ -86,15 +88,16 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
             )
         }
 
-       showProgressbar()
-       subscribeToEvents()
+        showProgressbar()
+        subscribeToEvents()
         val id = intent.getStringExtra(EXTRAS_TITLE)
         id?.let {
-            menuListViewModal.menuList(session.user.data?.id.toString(),id )
-           // menuListViewModal.menuList("7","1" )
+            menuListViewModal.menuList(session.user.data?.id.toString(), id)
+            // menuListViewModal.menuList("7","1" )
         }
 
     }
+
     /**
      * Get Flow Event
      */
@@ -121,9 +124,10 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
             setUpViewPager()
             binding.viewPager.isUserInputEnabled = false
             val requestOptions: RequestOptions = RequestOptions.diskCacheStrategyOf(
-                DiskCacheStrategy.ALL)
-            for (i in medeaList){
-                if (i.type=="image"){
+                DiskCacheStrategy.ALL
+            )
+            for (i in medeaList) {
+                if (i.type == "image") {
                     GlideApp.with(this)
                         .load(i.url)
                         .placeholder(R.drawable.food)
@@ -138,13 +142,18 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
         }
 
     }
+
     private fun onUpdateMenu(response: MediaListModal) {
         hideProgressbar()
         if (response.status == 1) {
-            medeaList = response.data
-            mediaListAdapter.submitData(medeaList)
-            Log.d("updateMenu APi call", response.data.toString())
-            mediaListAdapter.notifyDataSetChanged()
+            if (medeaList.size != response.data.size) {
+                medeaList = response.data
+                mediaListAdapter.submitData(medeaList)
+                Log.e("updateMenu APi call", response.data.toString())
+                binding.viewPager.adapter = mediaListAdapter
+                mediaListAdapter.notifyDataSetChanged()
+            }
+
 
         } else {
             Util.showInfoAlert(this, response.data.toString(), false)
@@ -158,35 +167,35 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
     }
 
 
-   /* private fun setupDummyData() {
-        val imageUrl =
-            "https://img.freepik.com/free-vector/organic-flat-rustic-restaurant-menu-template-with-photo_52683-62703.jpg?w=1380&t=st=1704340719~exp=1704341319~hmac=7d5e0321a6537f636413d6c99ec6ff3987afcc4ee652bcc1090b4e2392adf879"
-        val imageUrl2 =
-            "https://img.freepik.com/free-vector/modern-restaurant-menu-fast-food_52683-48982.jpg?w=1380&t=st=1704340991~exp=1704341591~hmac=81eeb4a1c0ad8e29d075d68e8666231381995e0298232db620fb8c7baaf6b371"
-        val imageUrl3 =
-            "https://img.freepik.com/free-vector/flat-design-indian-menu_52683-67288.jpg?w=1380&t=st=1704341039~exp=1704341639~hmac=74007fd3fa390eeeceefd910dc995aebd7c856a29f838f4e864faf25712a9370"
-        val modal1 = MediaModal(imageUrl, "Image")
-        val modal2 = MediaModal(STREAM_URL, "Video")
-        val modal3 = MediaModal(imageUrl2, "Image")
-        val modal4 = MediaModal(imageUrl3, "Image")
+    /* private fun setupDummyData() {
+         val imageUrl =
+             "https://img.freepik.com/free-vector/organic-flat-rustic-restaurant-menu-template-with-photo_52683-62703.jpg?w=1380&t=st=1704340719~exp=1704341319~hmac=7d5e0321a6537f636413d6c99ec6ff3987afcc4ee652bcc1090b4e2392adf879"
+         val imageUrl2 =
+             "https://img.freepik.com/free-vector/modern-restaurant-menu-fast-food_52683-48982.jpg?w=1380&t=st=1704340991~exp=1704341591~hmac=81eeb4a1c0ad8e29d075d68e8666231381995e0298232db620fb8c7baaf6b371"
+         val imageUrl3 =
+             "https://img.freepik.com/free-vector/flat-design-indian-menu_52683-67288.jpg?w=1380&t=st=1704341039~exp=1704341639~hmac=74007fd3fa390eeeceefd910dc995aebd7c856a29f838f4e864faf25712a9370"
+         val modal1 = MediaModal(imageUrl, "Image")
+         val modal2 = MediaModal(STREAM_URL, "Video")
+         val modal3 = MediaModal(imageUrl2, "Image")
+         val modal4 = MediaModal(imageUrl3, "Image")
 
-        medeaList.add(modal1)
-        medeaList.add(modal2)
-        medeaList.add(modal3)
+         medeaList.add(modal1)
+         medeaList.add(modal2)
+         medeaList.add(modal3)
 
-        medeaList.add(modal4)
-
-
-        viewPagerAdapter = ViewPagerAdapter(this, medeaList)
-        setUpViewPager()
-        binding.viewPager.isUserInputEnabled = false
+         medeaList.add(modal4)
 
 
+         viewPagerAdapter = ViewPagerAdapter(this, medeaList)
+         setUpViewPager()
+         binding.viewPager.isUserInputEnabled = false
 
 
 
-    }
-*/
+
+
+     }
+ */
 
     private fun setUpViewPager() {
 
@@ -234,7 +243,6 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
 
            })*/
 
-        startTimer()
     }
 
     override fun onDestroy() {
@@ -250,21 +258,27 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
 
     private fun currentPage(position: Int) {
         Log.e("page", position.toString())
-        if (medeaList.get(position).type == "video") {
-             stopTimer()
-           /* if (mediaListAdapter?.binding?.playerView?.player==null) return
-            mediaListAdapter?.binding?.playerView?.player!!.addListener(object :
-                Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) {
-                    if (state == Player.STATE_ENDED) {
-                        Log.d("player==","end")
-                        goNextPage()
-                        startTimer()
 
-                    }
-                }
-            })*/
+        if (medeaList.get(position).type == "video") {
+            stopTimer()
+            /* if (mediaListAdapter?.binding?.playerView?.player==null) return
+             mediaListAdapter?.binding?.playerView?.player!!.addListener(object :
+                 Player.Listener {
+                 override fun onPlaybackStateChanged(state: Int) {
+                     if (state == Player.STATE_ENDED) {
+                         Log.d("player==","end")
+                         goNextPage()
+                         startTimer()
+
+                     }
+                 }
+             })*/
+        } else {
+            if (!isTimerRunning)
+                startTimer()
         }
+
+
     }
 
     /* private fun imageViewPagerSwiping() {
@@ -284,30 +298,32 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
 
     private fun stopTimer() {
         if (mTimer1 != null) {
+            isTimerRunning = false
             mTimer1?.cancel()
             mTimer1?.purge()
-            Log.d("timer==", "stop")
+            Log.e("timer==", "stop")
         }
     }
 
     private fun startTimer() {
         mTimer1 = Timer()
+        isTimerRunning = true
         mTt1 = object : TimerTask() {
             override fun run() {
                 mTimerHandler.post {
+                    Log.e("timer==", "countinue....")
                     goNextPage()
                     val id = intent.getStringExtra(EXTRAS_TITLE)
                     id?.let {
-                        menuListViewModal.updateMenuList(session.user.data?.id.toString(),id )
+                        menuListViewModal.updateMenuList(session.user.data?.id.toString(), id)
                         // menuListViewModal.menuList("7","1" )
                     }
                 }
             }
         }
-        Log.d("timer==", "start")
+        Log.e("timer==", "start")
         mTimer1?.schedule(mTt1, 60000, 60000)
     }
-
 
 
     override fun onDetachedFromWindow() {
@@ -317,6 +333,15 @@ class AutoSliderActivity : BaseActivity(), MediaListAdapter.OnItemSelected {
 
     override fun videoEnd() {
         goNextPage()
+        if (!isTimerRunning)
         startTimer()
+    }
+
+    override fun singleVideoEnd() {
+        val id = intent.getStringExtra(EXTRAS_TITLE)
+        id?.let {
+            menuListViewModal.updateMenuList(session.user.data?.id.toString(), id)
+            // menuListViewModal.menuList("7","1" )
+        }
     }
 }
